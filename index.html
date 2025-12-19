@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan de Traitement - CEMEDIS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦷</text></svg>">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header avec informations patient -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <span class="logo-icon">🦷</span>
+                    <h1>Plan de Traitement</h1>
+                </div>
+                <div id="patient-info" class="patient-info hidden">
+                    <div class="patient-badge">
+                        <span class="patient-name" id="display-patient-name"></span>
+                        <span class="practitioner-name" id="display-practitioner-name"></span>
+                    </div>
+                    <div class="center-badge" id="display-center-name"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenu principal -->
+        <main class="main-content">
+            <div class="form-sections-container">
+
+                <!-- 1. Assainissement -->
+                <section class="form-section" data-section="assainissement">
+                    <div class="section-header">
+                        <span class="section-icon">🧽</span>
+                        <h3>1. Assainissement</h3>
+                    </div>
+                    <div class="section-content">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="detartrage">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Détartrage</span>
+                        </label>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="avulsion" onchange="toggleDentalChart(this, 'avulsion-chart')">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Avulsions dentaires</span>
+                        </label>
+                        <div id="avulsion-chart" class="dental-chart hidden" data-type="avulsion"></div>
+                    </div>
+                </section>
+
+                <!-- 2. Soins conservateurs -->
+                <section class="form-section" data-section="conservateurs">
+                    <div class="section-header">
+                        <span class="section-icon">🪥</span>
+                        <h3>2. Soins conservateurs</h3>
+                    </div>
+                    <div class="section-content">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="restauration" onchange="toggleDentalChart(this, 'restauration-chart')">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Restaurations</span>
+                        </label>
+                        <div id="restauration-chart" class="dental-chart hidden" data-type="restauration"></div>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="endo" onchange="toggleDentalChart(this, 'endo-chart')">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Traitements endodontiques</span>
+                        </label>
+                        <div id="endo-chart" class="dental-chart hidden" data-type="endo"></div>
+                    </div>
+                </section>
+
+                <!-- 3. Soins complémentaires -->
+                <section class="form-section" data-section="complementaires">
+                    <div class="section-header">
+                        <span class="section-icon">🛠</span>
+                        <h3>3. Soins complémentaires</h3>
+                    </div>
+                    <div class="section-content">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="implant" onchange="toggleDentalChart(this, 'implant-chart')">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Pose d'implants</span>
+                        </label>
+                        <div id="implant-chart" class="dental-chart hidden" data-type="implant"></div>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="parodonto" onchange="toggleDentalChart(this, 'parodonto-chart')">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Parodontologie</span>
+                        </label>
+                        <div id="parodonto-chart" class="dental-chart hidden" data-type="parodonto"></div>
+                    </div>
+                </section>
+
+                <!-- 4. Prothèses transitoires -->
+                <section class="form-section" data-section="transitoires">
+                    <div class="section-header">
+                        <span class="section-icon">🦷</span>
+                        <h3>4. Prothèses transitoires</h3>
+                    </div>
+                    <div class="section-content">
+                        <div class="radio-group">
+                            <label class="radio-item">
+                                <input type="radio" name="transitoires" value="oui" onclick="toggleDentalChartRadio('transitoire-chart', true)">
+                                <span class="radio-custom"></span>
+                                <span class="radio-label">Oui</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="transitoires" value="non" onclick="toggleDentalChartRadio('transitoire-chart', false)">
+                                <span class="radio-custom"></span>
+                                <span class="radio-label">Non</span>
+                            </label>
+                        </div>
+                        <div id="transitoire-chart" class="dental-chart hidden" data-type="transitoire"></div>
+                    </div>
+                </section>
+
+                <!-- 5. Prothèses définitives -->
+                <section class="form-section form-section-large" data-section="definitives">
+                    <div class="section-header">
+                        <span class="section-icon">👑</span>
+                        <h3>5. Prothèses définitives</h3>
+                    </div>
+                    <div class="section-content">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="inlay-core" onchange="toggleDentalChart(this, 'inlay-chart')">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Inlay Core</span>
+                        </label>
+                        <div id="inlay-chart" class="dental-chart hidden" data-type="definitive"></div>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="couronne" onchange="toggleDentalChart(this, 'couronne-chart')">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Couronnes</span>
+                        </label>
+                        <div id="couronne-chart" class="dental-chart hidden" data-type="definitive"></div>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="onlay" onchange="toggleDentalChart(this, 'onlay-chart')">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Inlay / Onlay</span>
+                        </label>
+                        <div id="onlay-chart" class="dental-chart hidden" data-type="definitive"></div>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="prothese-amovible" onchange="toggleDentalChart(this, 'prothese-chart')">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Prothèses amovibles</span>
+                        </label>
+                        <div id="prothese-chart" class="dental-chart hidden" data-type="definitive"></div>
+                    </div>
+                </section>
+
+                <!-- 6. Radiographies -->
+                <section class="form-section" data-section="radiographies">
+                    <div class="section-header">
+                        <span class="section-icon">🩻</span>
+                        <h3>6. Radiographies</h3>
+                    </div>
+                    <div class="section-content">
+                        <button id="captureScreen" class="btn btn-primary">
+                            <span class="btn-icon">📸</span>
+                            Capturer l'écran
+                        </button>
+                        <div id="previewContainer" class="preview-container hidden">
+                            <p class="preview-label">Prévisualisation :</p>
+                            <div class="preview-image-wrapper">
+                                <img id="screenshotPreview" src="" alt="Capture d'écran">
+                                <button id="removeScreenshot" class="btn-remove" title="Supprimer la capture">×</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="screenshotData">
+                    </div>
+                </section>
+
+                <!-- 7. Pièces jointes -->
+                <section class="form-section" data-section="pieces-jointes">
+                    <div class="section-header">
+                        <span class="section-icon">📎</span>
+                        <h3>7. Pièces jointes</h3>
+                    </div>
+                    <div class="section-content">
+                        <label for="fileUpload" class="btn btn-secondary file-upload-btn">
+                            <span class="btn-icon">📂</span>
+                            Ajouter des pièces jointes
+                        </label>
+                        <input type="file" id="fileUpload" multiple accept="image/*,.pdf,.doc,.docx">
+                        <div id="fileList" class="file-list"></div>
+                    </div>
+                </section>
+
+                <!-- 8. Notes -->
+                <section class="form-section" data-section="notes">
+                    <div class="section-header">
+                        <span class="section-icon">📝</span>
+                        <h3>8. Notes complémentaires</h3>
+                    </div>
+                    <div class="section-content">
+                        <textarea id="notes" class="notes-textarea" placeholder="Ajoutez des notes ou observations complémentaires..."></textarea>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Bouton de sauvegarde -->
+            <div class="save-section">
+                <button id="savePlanButton" class="btn btn-save">
+                    <span class="btn-icon">💾</span>
+                    Enregistrer le Plan de Traitement
+                </button>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>© 2024 CEMEDIS - Plan de Traitement Dentaire</p>
+        </footer>
+    </div>
+
+    <!-- Modal de chargement -->
+    <div id="loadingModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="loader"></div>
+            <p>Enregistrement en cours...</p>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/dental-chart.js"></script>
+    <script src="js/file-upload.js"></script>
+    <script src="js/screenshot.js"></script>
+    <script type="module" src="js/firebase-config.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
