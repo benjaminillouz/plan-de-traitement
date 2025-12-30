@@ -3,78 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page non trouvée - Plan de Traitement</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <title>Hello PdT - Page non trouvée</title>
+    <link rel="icon" type="image/svg+xml" href="assets/tooth.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦷</text></svg>">
-    <style>
-        .error-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 80vh;
-            text-align: center;
-            padding: 2rem;
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    colors: { primary: { 500: '#0ea5e9', 600: '#0284c7' } }
+                }
+            }
         }
-
-        .error-code {
-            font-size: 8rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            line-height: 1;
-            margin-bottom: 1rem;
-            opacity: 0.8;
-        }
-
-        .error-title {
-            font-size: 1.5rem;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-        }
-
-        .error-message {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            margin-bottom: 2rem;
-            max-width: 400px;
-        }
-    </style>
+    </script>
 </head>
-<body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="header-content">
-                <div class="logo-section">
-                    <span class="logo-icon">🦷</span>
-                    <h1>Plan de Traitement</h1>
+<body class="bg-slate-50 font-sans antialiased min-h-screen flex flex-col">
+    <header class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center h-16">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-sky-500 to-sky-600 rounded-xl flex items-center justify-center shadow-lg shadow-sky-500/20">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C9.5 2 7.5 3.5 7 5.5C6.5 7.5 7 9 7 11C7 13 6 15 5.5 17C5 19 5.5 21 7.5 22C9.5 23 10 21 10.5 19C11 17 11.5 15 12 15C12.5 15 13 17 13.5 19C14 21 14.5 23 16.5 22C18.5 21 19 19 18.5 17C18 15 17 13 17 11C17 9 17.5 7.5 17 5.5C16.5 3.5 14.5 2 12 2Z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-900">Hello <span class="text-sky-600">PdT</span></h1>
+                        <p class="text-xs text-slate-500 -mt-0.5">Plan de Traitement</p>
+                    </div>
                 </div>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <!-- Contenu principal -->
-        <main class="main-content">
-            <div class="error-container">
-                <div class="error-code">404</div>
-                <h2 class="error-title">Page non trouvée</h2>
-                <p class="error-message">
-                    Oups ! La page que vous recherchez n'existe pas ou a été déplacée.
-                </p>
-                <a href="index.html" class="btn btn-primary">
-                    <span class="btn-icon">🏠</span>
-                    Retour à l'accueil
-                </a>
-            </div>
-        </main>
+    <main class="flex-1 flex items-center justify-center py-16 px-4">
+        <div class="text-center">
+            <div class="text-9xl font-bold text-sky-500/20 mb-4">404</div>
+            <h2 class="text-2xl font-bold text-slate-900 mb-2">Page non trouvée</h2>
+            <p class="text-slate-600 mb-8 max-w-md">Oups ! La page que vous recherchez n'existe pas ou a été déplacée.</p>
+            <a href="index.html" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-semibold rounded-xl shadow-lg shadow-sky-500/20 hover:-translate-y-0.5 transition-all">
+                <span>🏠</span> Retour à l'accueil
+            </a>
+        </div>
+    </main>
 
-        <!-- Footer -->
-        <footer class="app-footer">
-            <p>© 2024 CEMEDIS - Plan de Traitement Dentaire</p>
-        </footer>
-    </div>
+    <footer class="bg-white border-t border-slate-200 py-6">
+        <div class="text-center text-sm text-slate-500">© 2024 <span class="font-semibold text-slate-700">Hello PdT</span></div>
+    </footer>
 </body>
 </html>
