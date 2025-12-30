@@ -130,7 +130,9 @@ function collectTreatmentData() {
                 dents: window.getDentalSelection ? window.getDentalSelection('prothese-chart') : []
             }
         },
-        notes: document.getElementById('notes')?.value || ''
+        notes: document.getElementById('notes')?.value || '',
+        radiographies: window.getRadiographs ? window.getRadiographs() : [],
+        photos: window.getPhotos ? window.getPhotos() : []
     };
     return data;
 }
@@ -245,6 +247,44 @@ function generatePdfHtml(patient, treatment) {
         `;
     }
 
+    // 6. Radiographies
+    if (treatment.radiographies && treatment.radiographies.length > 0) {
+        sectionsHtml += `
+            <div class="section">
+                <h3 class="section-title">6. Radiographies</h3>
+                <div class="section-content">
+                    <div class="images-grid">
+                        ${treatment.radiographies.map(radio => `
+                            <div class="image-item">
+                                <img src="${radio.data}" alt="${radio.name}" class="image-thumb">
+                                <p class="image-caption">${radio.name}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // 7. Photographies
+    if (treatment.photos && treatment.photos.length > 0) {
+        sectionsHtml += `
+            <div class="section">
+                <h3 class="section-title">7. Photographies</h3>
+                <div class="section-content">
+                    <div class="images-grid">
+                        ${treatment.photos.map(photo => `
+                            <div class="image-item">
+                                <img src="${photo.data}" alt="${photo.name}" class="image-thumb">
+                                <p class="image-caption">${photo.name}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     // Notes
     if (treatment.notes) {
         sectionsHtml += `
@@ -354,6 +394,26 @@ function generatePdfHtml(patient, treatment) {
                 color: #94a3b8;
                 font-style: italic;
                 padding: 40px;
+            }
+            .images-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 15px;
+            }
+            .image-item {
+                text-align: center;
+            }
+            .image-thumb {
+                width: 100%;
+                height: 120px;
+                object-fit: cover;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+            }
+            .image-caption {
+                font-size: 11px;
+                color: #64748b;
+                margin: 5px 0 0 0;
             }
             .pdf-footer {
                 margin-top: 40px;
