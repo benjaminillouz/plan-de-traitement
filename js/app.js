@@ -312,7 +312,7 @@ function initPhotoUpload() {
 
         try {
             // Create Peer instance
-            peerInstance = new Peer();
+            peerInstance = new window.Peer();
 
             peerInstance.on('open', async (id) => {
                 console.log('Peer ID:', id);
@@ -323,7 +323,7 @@ function initPhotoUpload() {
 
                 // Generate QR Code
                 try {
-                    const qrDataUrl = await QRCode.toDataURL(photoUrl, {
+                    const qrDataUrl = await window.QRCode.toDataURL(photoUrl, {
                         width: 200,
                         margin: 2,
                         color: { dark: '#4f46e5', light: '#ffffff' }
