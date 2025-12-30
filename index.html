@@ -394,7 +394,7 @@
                         <!-- QR Code Display -->
                         <div id="qr-container" class="hidden flex flex-col items-center">
                             <div class="bg-white p-3 rounded-xl shadow-md">
-                                <img id="qr-code-img" src="" alt="QR Code" class="w-48 h-48">
+                                <div id="qr-code-container" class="w-48 h-48"></div>
                             </div>
                             <p class="text-xs text-indigo-600 mt-2 text-center">
                                 Scannez avec votre téléphone
@@ -535,7 +535,7 @@
 
     <!-- PeerJS & QRCode Libraries -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <!-- Scripts -->
     <script>

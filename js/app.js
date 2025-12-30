@@ -299,12 +299,14 @@ function initPhotoUpload() {
     }
 
     // PeerJS connection
+    let qrCodeInstance = null;
+
     async function initPeerConnection() {
         const peerIdle = document.getElementById('peer-idle');
         const peerWaiting = document.getElementById('peer-waiting');
         const peerConnected = document.getElementById('peer-connected');
         const qrContainer = document.getElementById('qr-container');
-        const qrCodeImg = document.getElementById('qr-code-img');
+        const qrCodeContainer = document.getElementById('qr-code-container');
 
         // Show waiting state
         if (peerIdle) peerIdle.classList.add('hidden');
@@ -314,28 +316,39 @@ function initPhotoUpload() {
             // Create Peer instance
             peerInstance = new window.Peer();
 
-            peerInstance.on('open', async (id) => {
+            peerInstance.on('open', (id) => {
                 console.log('Peer ID:', id);
 
                 // Generate QR Code URL
                 const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
                 const photoUrl = `${baseUrl}photo.html?peer=${id}`;
+                console.log('Photo URL:', photoUrl);
 
-                // Generate QR Code
+                // Clear previous QR code if any
+                if (qrCodeContainer) {
+                    qrCodeContainer.innerHTML = '';
+                }
+
+                // Generate QR Code using qrcodejs
                 try {
-                    const qrDataUrl = await window.QRCode.toDataURL(photoUrl, {
-                        width: 200,
-                        margin: 2,
-                        color: { dark: '#4f46e5', light: '#ffffff' }
-                    });
+                    if (qrCodeContainer && window.QRCode) {
+                        qrCodeInstance = new window.QRCode(qrCodeContainer, {
+                            text: photoUrl,
+                            width: 192,
+                            height: 192,
+                            colorDark: '#4f46e5',
+                            colorLight: '#ffffff',
+                            correctLevel: window.QRCode.CorrectLevel.M
+                        });
+                    }
 
-                    if (qrCodeImg) qrCodeImg.src = qrDataUrl;
                     if (qrContainer) {
                         qrContainer.classList.remove('hidden');
                         qrContainer.classList.add('flex');
                     }
                 } catch (qrError) {
                     console.error('QR Code error:', qrError);
+                    showToast('Erreur lors de la génération du QR code', 'error');
                 }
             });
 
@@ -390,6 +403,7 @@ function initPhotoUpload() {
         const peerWaiting = document.getElementById('peer-waiting');
         const peerConnected = document.getElementById('peer-connected');
         const qrContainer = document.getElementById('qr-container');
+        const qrCodeContainer = document.getElementById('qr-code-container');
 
         if (peerIdle) peerIdle.classList.remove('hidden');
         if (peerWaiting) peerWaiting.classList.add('hidden');
@@ -398,6 +412,11 @@ function initPhotoUpload() {
             qrContainer.classList.add('hidden');
             qrContainer.classList.remove('flex');
         }
+        // Clear QR code
+        if (qrCodeContainer) {
+            qrCodeContainer.innerHTML = '';
+        }
+        qrCodeInstance = null;
     }
 
     // Expose functions globally
