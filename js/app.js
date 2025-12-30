@@ -213,10 +213,12 @@ function collectFormData() {
 }
 
 // ========================================
-// Gestion des photos
+// Gestion des photos avec PeerJS
 // ========================================
 
 let photos = [];
+let peerInstance = null;
+let peerConnection = null;
 
 /**
  * Initialise la gestion des photos
@@ -225,7 +227,10 @@ function initPhotoUpload() {
     const photoInput = document.getElementById('photoUpload');
     const photosGrid = document.getElementById('photos-grid');
     const photosEmpty = document.getElementById('photos-empty');
+    const generateQrBtn = document.getElementById('generateQrBtn');
+    const cancelQrBtn = document.getElementById('cancelQrBtn');
 
+    // File upload handler
     if (photoInput) {
         photoInput.addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
@@ -233,22 +238,35 @@ function initPhotoUpload() {
                 if (file.type.startsWith('image/')) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                        const photo = {
-                            id: Date.now() + Math.random(),
-                            data: event.target.result,
-                            name: `Photo ${photos.length + 1}`,
-                            date: new Date().toLocaleDateString('fr-FR'),
-                            file: file
-                        };
-                        photos.push(photo);
-                        renderPhotos();
+                        addPhoto(event.target.result);
                     };
                     reader.readAsDataURL(file);
                 }
             });
-            // Reset input
             photoInput.value = '';
         });
+    }
+
+    // Generate QR Code button
+    if (generateQrBtn) {
+        generateQrBtn.addEventListener('click', initPeerConnection);
+    }
+
+    // Cancel QR button
+    if (cancelQrBtn) {
+        cancelQrBtn.addEventListener('click', closePeerConnection);
+    }
+
+    function addPhoto(imageData) {
+        const photo = {
+            id: Date.now() + Math.random(),
+            data: imageData,
+            name: `Photo ${photos.length + 1}`,
+            date: new Date().toLocaleDateString('fr-FR')
+        };
+        photos.push(photo);
+        renderPhotos();
+        showToast('Photo ajoutée !', 'success');
     }
 
     function renderPhotos() {
@@ -280,6 +298,108 @@ function initPhotoUpload() {
         }
     }
 
+    // PeerJS connection
+    async function initPeerConnection() {
+        const peerIdle = document.getElementById('peer-idle');
+        const peerWaiting = document.getElementById('peer-waiting');
+        const peerConnected = document.getElementById('peer-connected');
+        const qrContainer = document.getElementById('qr-container');
+        const qrCodeImg = document.getElementById('qr-code-img');
+
+        // Show waiting state
+        if (peerIdle) peerIdle.classList.add('hidden');
+        if (peerWaiting) peerWaiting.classList.remove('hidden');
+
+        try {
+            // Create Peer instance
+            peerInstance = new Peer();
+
+            peerInstance.on('open', async (id) => {
+                console.log('Peer ID:', id);
+
+                // Generate QR Code URL
+                const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+                const photoUrl = `${baseUrl}photo.html?peer=${id}`;
+
+                // Generate QR Code
+                try {
+                    const qrDataUrl = await QRCode.toDataURL(photoUrl, {
+                        width: 200,
+                        margin: 2,
+                        color: { dark: '#4f46e5', light: '#ffffff' }
+                    });
+
+                    if (qrCodeImg) qrCodeImg.src = qrDataUrl;
+                    if (qrContainer) {
+                        qrContainer.classList.remove('hidden');
+                        qrContainer.classList.add('flex');
+                    }
+                } catch (qrError) {
+                    console.error('QR Code error:', qrError);
+                }
+            });
+
+            peerInstance.on('connection', (conn) => {
+                peerConnection = conn;
+                console.log('Mobile connected!');
+
+                // Update UI
+                if (peerWaiting) peerWaiting.classList.add('hidden');
+                if (peerConnected) peerConnected.classList.remove('hidden');
+
+                conn.on('data', (data) => {
+                    console.log('Received data:', data.type);
+                    if (data.type === 'photo') {
+                        addPhoto(data.data);
+                    }
+                });
+
+                conn.on('close', () => {
+                    console.log('Mobile disconnected');
+                    resetPeerUI();
+                });
+            });
+
+            peerInstance.on('error', (err) => {
+                console.error('Peer error:', err);
+                showToast('Erreur de connexion P2P', 'error');
+                resetPeerUI();
+            });
+
+        } catch (error) {
+            console.error('Init peer error:', error);
+            showToast('Erreur d\'initialisation', 'error');
+            resetPeerUI();
+        }
+    }
+
+    function closePeerConnection() {
+        if (peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
+        }
+        if (peerInstance) {
+            peerInstance.destroy();
+            peerInstance = null;
+        }
+        resetPeerUI();
+    }
+
+    function resetPeerUI() {
+        const peerIdle = document.getElementById('peer-idle');
+        const peerWaiting = document.getElementById('peer-waiting');
+        const peerConnected = document.getElementById('peer-connected');
+        const qrContainer = document.getElementById('qr-container');
+
+        if (peerIdle) peerIdle.classList.remove('hidden');
+        if (peerWaiting) peerWaiting.classList.add('hidden');
+        if (peerConnected) peerConnected.classList.add('hidden');
+        if (qrContainer) {
+            qrContainer.classList.add('hidden');
+            qrContainer.classList.remove('flex');
+        }
+    }
+
     // Expose functions globally
     window.updatePhotoName = (index, name) => {
         if (photos[index]) {
@@ -295,6 +415,7 @@ function initPhotoUpload() {
     };
 
     window.getPhotos = () => photos;
+    window.addPhotoFromPeer = addPhoto;
 }
 
 // ========================================

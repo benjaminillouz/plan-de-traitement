@@ -344,16 +344,73 @@
                     Photographies
                 </h2>
 
-                <!-- File Upload Section -->
+                <!-- QR Code Section -->
                 <div class="mb-6 p-6 bg-indigo-50 rounded-xl border border-indigo-200">
-                    <h3 class="text-lg font-semibold text-indigo-900 mb-2">Ajouter des photos</h3>
-                    <p class="text-sm text-indigo-700 mb-4">Sélectionnez des photos depuis votre appareil pour les ajouter au dossier patient.</p>
+                    <div class="flex flex-col md:flex-row items-center gap-6">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-indigo-900 mb-2">
+                                📱 Ajouter une photo depuis votre téléphone
+                            </h3>
+                            <p class="text-sm text-indigo-700 mb-4">
+                                Scannez le QR code avec votre téléphone pour prendre une photo qui sera automatiquement ajoutée au dossier patient.
+                            </p>
 
-                    <label for="photoUpload" class="inline-flex items-center gap-2 px-4 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors cursor-pointer">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            <!-- Generate QR Code Button -->
+                            <div id="peer-idle">
+                                <button id="generateQrBtn" class="px-4 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Générer un QR Code
+                                </button>
+                            </div>
+
+                            <!-- Waiting Status -->
+                            <div id="peer-waiting" class="hidden">
+                                <div class="flex items-center gap-2 text-indigo-600">
+                                    <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span class="font-medium">En attente de connexion...</span>
+                                </div>
+                                <button id="cancelQrBtn" class="mt-2 text-sm text-slate-500 hover:text-slate-700 underline">
+                                    Annuler
+                                </button>
+                            </div>
+
+                            <!-- Connected Status -->
+                            <div id="peer-connected" class="hidden">
+                                <div class="flex items-center gap-2 text-green-600">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span class="font-medium">Téléphone connecté !</span>
+                                </div>
+                                <p class="text-sm text-green-700 mt-1">Prenez une photo avec votre téléphone</p>
+                            </div>
+                        </div>
+
+                        <!-- QR Code Display -->
+                        <div id="qr-container" class="hidden flex flex-col items-center">
+                            <div class="bg-white p-3 rounded-xl shadow-md">
+                                <img id="qr-code-img" src="" alt="QR Code" class="w-48 h-48">
+                            </div>
+                            <p class="text-xs text-indigo-600 mt-2 text-center">
+                                Scannez avec votre téléphone
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alternative: File Upload -->
+                <div class="mb-6">
+                    <p class="text-sm text-slate-500 mb-2">Ou importez des photos depuis votre ordinateur :</p>
+                    <label for="photoUpload" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
-                        Ajouter des photos
+                        Importer des fichiers
                     </label>
                     <input type="file" id="photoUpload" multiple accept="image/*" class="hidden">
                 </div>
@@ -368,7 +425,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     <p class="font-medium">Aucune photo</p>
-                    <p class="text-sm">Utilisez le bouton ci-dessus pour ajouter des photos</p>
+                    <p class="text-sm">Générez un QR code ou importez des photos</p>
                 </div>
             </div>
 
@@ -401,6 +458,10 @@
 
     <!-- Toast Container -->
     <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3"></div>
+
+    <!-- PeerJS & QRCode Libraries -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 
     <!-- Scripts -->
     <script>
