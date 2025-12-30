@@ -3,161 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plan de Traitement - Enregistré</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <title>Hello PdT - Plan Enregistré</title>
+    <link rel="icon" type="image/svg+xml" href="assets/tooth.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦷</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    colors: { primary: { 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1' } }
+                }
+            }
+        }
+    </script>
     <style>
-        .success-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 80vh;
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .success-icon {
-            font-size: 6rem;
-            margin-bottom: 1rem;
-            animation: bounce 0.6s ease-out;
-        }
-
-        @keyframes bounce {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .success-title {
-            font-size: 2rem;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-        }
-
-        .success-message {
-            font-size: 1.1rem;
-            color: var(--text-secondary);
-            margin-bottom: 2rem;
-            max-width: 500px;
-        }
-
-        .success-card {
-            background: white;
-            padding: 2rem;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
-            margin-bottom: 2rem;
-            max-width: 400px;
-            width: 100%;
-        }
-
-        .success-card-title {
-            font-size: 1rem;
-            color: var(--text-muted);
-            margin-bottom: 0.5rem;
-        }
-
-        .success-card-id {
-            font-size: 1.2rem;
-            color: var(--primary-color);
-            font-weight: 600;
-            font-family: monospace;
-            word-break: break-all;
-        }
-
-        .success-actions {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .confetti {
-            position: fixed;
-            width: 10px;
-            height: 10px;
-            opacity: 0;
-            animation: confetti-fall 3s ease-out forwards;
-        }
-
-        @keyframes confetti-fall {
-            0% {
-                transform: translateY(-100vh) rotate(0deg);
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(100vh) rotate(720deg);
-                opacity: 0;
-            }
-        }
+        @keyframes bounce { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes confetti-fall { 0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+        .animate-bounce-in { animation: bounce 0.6s ease-out; }
+        .confetti { position: fixed; width: 10px; height: 10px; opacity: 0; animation: confetti-fall 3s ease-out forwards; }
     </style>
 </head>
-<body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="header-content">
-                <div class="logo-section">
-                    <span class="logo-icon">🦷</span>
-                    <h1>Plan de Traitement</h1>
+<body class="bg-slate-50 font-sans antialiased min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center h-16">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-sky-500 to-sky-600 rounded-xl flex items-center justify-center shadow-lg shadow-sky-500/20">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C9.5 2 7.5 3.5 7 5.5C6.5 7.5 7 9 7 11C7 13 6 15 5.5 17C5 19 5.5 21 7.5 22C9.5 23 10 21 10.5 19C11 17 11.5 15 12 15C12.5 15 13 17 13.5 19C14 21 14.5 23 16.5 22C18.5 21 19 19 18.5 17C18 15 17 13 17 11C17 9 17.5 7.5 17 5.5C16.5 3.5 14.5 2 12 2Z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-900">Hello <span class="text-sky-600">PdT</span></h1>
+                        <p class="text-xs text-slate-500 -mt-0.5">Plan de Traitement</p>
+                    </div>
                 </div>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <!-- Contenu principal -->
-        <main class="main-content">
-            <div class="success-container">
-                <div class="success-icon">✅</div>
-                <h2 class="success-title">Plan de traitement enregistré !</h2>
-                <p class="success-message">
-                    Le plan de traitement a été sauvegardé avec succès.
-                    Vous pouvez le consulter ou créer un nouveau plan.
-                </p>
+    <main class="flex-1 flex items-center justify-center py-16 px-4">
+        <div class="text-center max-w-md">
+            <div class="text-7xl mb-6 animate-bounce-in">✅</div>
+            <h2 class="text-2xl font-bold text-slate-900 mb-2">Plan de traitement enregistré !</h2>
+            <p class="text-slate-600 mb-8">Le plan de traitement a été sauvegardé avec succès. Vous pouvez le consulter ou créer un nouveau plan.</p>
 
-                <div class="success-card">
-                    <p class="success-card-title">Référence du plan</p>
-                    <p class="success-card-id" id="planId">-</p>
-                </div>
-
-                <div class="success-actions">
-                    <a href="#" id="viewPlanBtn" class="btn btn-primary">
-                        <span class="btn-icon">👁️</span>
-                        Voir le plan
-                    </a>
-                    <a href="index.html" class="btn btn-secondary">
-                        <span class="btn-icon">➕</span>
-                        Nouveau plan
-                    </a>
-                </div>
+            <div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-200 mb-8">
+                <p class="text-sm text-slate-500 mb-1">Référence du plan</p>
+                <p id="planId" class="text-lg font-mono font-semibold text-sky-600 break-all">-</p>
             </div>
-        </main>
 
-        <!-- Footer -->
-        <footer class="app-footer">
-            <p>© 2024 CEMEDIS - Plan de Traitement Dentaire</p>
-        </footer>
-    </div>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="#" id="viewPlanBtn" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-semibold rounded-xl shadow-lg shadow-sky-500/20 hover:-translate-y-0.5 transition-all">
+                    <span>👁️</span> Voir le plan
+                </a>
+                <a href="index.html" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 font-semibold rounded-xl hover:border-sky-300 hover:text-sky-600 transition-all">
+                    <span>➕</span> Nouveau plan
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-6">
+        <div class="text-center text-sm text-slate-500">© 2024 <span class="font-semibold text-slate-700">Hello PdT</span></div>
+    </footer>
 
     <script>
-        // Récupérer l'ID du plan depuis l'URL
         const urlParams = new URLSearchParams(window.location.search);
         const planId = urlParams.get('id');
-
         if (planId) {
             document.getElementById('planId').textContent = planId;
             document.getElementById('viewPlanBtn').href = `view.html?id=${planId}`;
         }
 
-        // Animation de confettis
         function createConfetti() {
-            const colors = ['#635bff', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'];
-            const shapes = ['circle', 'square'];
-
+            const colors = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
             for (let i = 0; i < 50; i++) {
                 const confetti = document.createElement('div');
                 confetti.classList.add('confetti');
@@ -165,19 +88,11 @@
                 confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
                 confetti.style.animationDelay = Math.random() * 2 + 's';
                 confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
-
-                if (shapes[Math.floor(Math.random() * shapes.length)] === 'circle') {
-                    confetti.style.borderRadius = '50%';
-                }
-
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
                 document.body.appendChild(confetti);
-
-                // Supprimer après l'animation
                 setTimeout(() => confetti.remove(), 5000);
             }
         }
-
-        // Lancer les confettis au chargement
         document.addEventListener('DOMContentLoaded', createConfetti);
     </script>
 </body>

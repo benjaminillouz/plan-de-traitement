@@ -1,13 +1,11 @@
 /**
- * Dental Chart Module
- * Gestion du schéma dentaire interactif
+ * Dental Chart Module - Hello PdT
+ * Schéma dentaire interactif moderne
  */
 
-// Configuration des dents
 const UPPER_TEETH = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
 const LOWER_TEETH = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
 
-// Mapping des types de traitement vers les classes CSS
 const TREATMENT_CLASSES = {
     'avulsion': 'selected-avulsion',
     'restauration': 'selected-restauration',
@@ -18,11 +16,6 @@ const TREATMENT_CLASSES = {
     'definitive': 'selected-definitive'
 };
 
-/**
- * Bascule l'affichage d'un schéma dentaire pour une checkbox
- * @param {HTMLInputElement} checkbox - La checkbox qui déclenche l'action
- * @param {string} chartId - L'ID du conteneur du schéma dentaire
- */
 function toggleDentalChart(checkbox, chartId) {
     const chart = document.getElementById(chartId);
     if (!chart) return;
@@ -34,16 +27,10 @@ function toggleDentalChart(checkbox, chartId) {
         }
     } else {
         chart.classList.add('hidden');
-        // Réinitialiser les sélections
         resetChartSelections(chart);
     }
 }
 
-/**
- * Bascule l'affichage d'un schéma dentaire pour un radio button
- * @param {string} chartId - L'ID du conteneur du schéma dentaire
- * @param {boolean} show - Afficher ou masquer le schéma
- */
 function toggleDentalChartRadio(chartId, show) {
     const chart = document.getElementById(chartId);
     if (!chart) return;
@@ -59,77 +46,84 @@ function toggleDentalChartRadio(chartId, show) {
     }
 }
 
-/**
- * Crée un schéma dentaire dans le conteneur spécifié
- * @param {HTMLElement} container - Le conteneur pour le schéma dentaire
- */
 function createDentalChart(container) {
-    // Ligne supérieure
+    const wrapper = document.createElement('div');
+    wrapper.className = 'bg-slate-50 rounded-xl p-4 mt-2 border border-slate-200';
+
+    const upperLabel = document.createElement('div');
+    upperLabel.className = 'text-xs text-slate-400 text-center mb-2 font-medium uppercase tracking-wide';
+    upperLabel.textContent = 'Arcade supérieure';
+    wrapper.appendChild(upperLabel);
+
     const upperRow = document.createElement('div');
-    upperRow.classList.add('dental-row');
+    upperRow.className = 'flex justify-center gap-1 mb-3 flex-wrap';
     upperRow.setAttribute('data-row', 'upper');
 
-    UPPER_TEETH.forEach(num => {
+    UPPER_TEETH.forEach((num, index) => {
+        if (index === 8) {
+            const separator = document.createElement('div');
+            separator.className = 'w-1 mx-1 hidden sm:block';
+            upperRow.appendChild(separator);
+        }
         upperRow.appendChild(createTooth(num, container));
     });
+    wrapper.appendChild(upperRow);
 
-    // Ligne inférieure
+    const divider = document.createElement('div');
+    divider.className = 'border-t border-dashed border-slate-300 my-3';
+    wrapper.appendChild(divider);
+
     const lowerRow = document.createElement('div');
-    lowerRow.classList.add('dental-row');
+    lowerRow.className = 'flex justify-center gap-1 mt-3 flex-wrap';
     lowerRow.setAttribute('data-row', 'lower');
 
-    LOWER_TEETH.forEach(num => {
+    LOWER_TEETH.forEach((num, index) => {
+        if (index === 8) {
+            const separator = document.createElement('div');
+            separator.className = 'w-1 mx-1 hidden sm:block';
+            lowerRow.appendChild(separator);
+        }
         lowerRow.appendChild(createTooth(num, container));
     });
+    wrapper.appendChild(lowerRow);
 
-    // Ajouter les lignes au conteneur
-    container.appendChild(upperRow);
-    container.appendChild(lowerRow);
+    const lowerLabel = document.createElement('div');
+    lowerLabel.className = 'text-xs text-slate-400 text-center mt-2 font-medium uppercase tracking-wide';
+    lowerLabel.textContent = 'Arcade inférieure';
+    wrapper.appendChild(lowerLabel);
+
+    container.appendChild(wrapper);
 }
 
-/**
- * Crée un élément dent
- * @param {number} num - Le numéro de la dent
- * @param {HTMLElement} container - Le conteneur parent
- * @returns {HTMLElement} L'élément dent
- */
 function createTooth(num, container) {
-    const tooth = document.createElement('div');
-    tooth.classList.add('tooth');
+    const tooth = document.createElement('button');
+    tooth.className = 'tooth w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-slate-300 bg-white text-xs sm:text-sm font-semibold text-slate-600 hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-1 cursor-pointer select-none';
     tooth.textContent = num;
     tooth.setAttribute('data-tooth', num);
+    tooth.type = 'button';
 
-    // Récupérer le type de traitement depuis l'attribut data du conteneur
     const treatmentType = container.getAttribute('data-type') || '';
     const selectionClass = TREATMENT_CLASSES[treatmentType] || '';
 
-    // Gestion du clic
     tooth.addEventListener('click', function(e) {
+        e.preventDefault();
         e.stopPropagation();
 
         if (selectionClass) {
             this.classList.toggle(selectionClass);
         }
 
-        // Déclencher un événement personnalisé pour signaler le changement
         const event = new CustomEvent('toothSelectionChange', {
             bubbles: true,
-            detail: {
-                tooth: num,
-                selected: this.classList.contains(selectionClass),
-                type: treatmentType
-            }
+            detail: { tooth: num, selected: this.classList.contains(selectionClass), type: treatmentType }
         });
         this.dispatchEvent(event);
     });
 
-    // Accessibilité
-    tooth.setAttribute('role', 'button');
-    tooth.setAttribute('tabindex', '0');
+    tooth.setAttribute('role', 'switch');
+    tooth.setAttribute('aria-checked', 'false');
     tooth.setAttribute('aria-label', `Dent ${num}`);
-    tooth.setAttribute('aria-pressed', 'false');
 
-    // Support clavier
     tooth.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -140,63 +134,33 @@ function createTooth(num, container) {
     return tooth;
 }
 
-/**
- * Réinitialise les sélections d'un schéma dentaire
- * @param {HTMLElement} chart - Le conteneur du schéma dentaire
- */
 function resetChartSelections(chart) {
     const teeth = chart.querySelectorAll('.tooth');
     teeth.forEach(tooth => {
-        // Retirer toutes les classes de sélection
-        Object.values(TREATMENT_CLASSES).forEach(cls => {
-            tooth.classList.remove(cls);
-        });
-        tooth.setAttribute('aria-pressed', 'false');
+        Object.values(TREATMENT_CLASSES).forEach(cls => tooth.classList.remove(cls));
+        tooth.setAttribute('aria-checked', 'false');
     });
 }
 
-/**
- * Récupère les dents sélectionnées pour un schéma donné
- * @param {string} chartId - L'ID du conteneur du schéma dentaire
- * @param {string} className - La classe CSS de sélection
- * @returns {Array<string>} Les numéros des dents sélectionnées
- */
 function getSelectedTeeth(chartId, className) {
     const chart = document.getElementById(chartId);
     if (!chart) return [];
-
-    const selectedTeeth = chart.querySelectorAll(`.tooth.${className}`);
-    return Array.from(selectedTeeth).map(tooth => tooth.textContent);
+    return Array.from(chart.querySelectorAll(`.tooth.${className}`)).map(t => t.textContent);
 }
 
-/**
- * Définit les dents sélectionnées pour un schéma donné
- * @param {string} chartId - L'ID du conteneur du schéma dentaire
- * @param {Array<string|number>} teethNumbers - Les numéros des dents à sélectionner
- * @param {string} className - La classe CSS de sélection
- */
 function setSelectedTeeth(chartId, teethNumbers, className) {
     const chart = document.getElementById(chartId);
     if (!chart) return;
-
-    // S'assurer que le schéma existe
-    if (!chart.hasChildNodes()) {
-        createDentalChart(chart);
-    }
-
+    if (!chart.hasChildNodes()) createDentalChart(chart);
     teethNumbers.forEach(num => {
         const tooth = chart.querySelector(`[data-tooth="${num}"]`);
         if (tooth) {
             tooth.classList.add(className);
-            tooth.setAttribute('aria-pressed', 'true');
+            tooth.setAttribute('aria-checked', 'true');
         }
     });
 }
 
-/**
- * Récupère toutes les sélections de tous les schémas dentaires
- * @returns {Object} Un objet contenant toutes les sélections
- */
 function getAllDentalSelections() {
     return {
         avulsions: getSelectedTeeth('avulsion-chart', 'selected-avulsion'),
@@ -214,7 +178,6 @@ function getAllDentalSelections() {
     };
 }
 
-// Exposer les fonctions globalement
 window.toggleDentalChart = toggleDentalChart;
 window.toggleDentalChartRadio = toggleDentalChartRadio;
 window.createDentalChart = createDentalChart;
