@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hello PdT - Capture Photo</title>
+    <link rel="icon" type="image/svg+xml" href="assets/tooth.svg">
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        primary: { 500: '#004B63', 600: '#003d51' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 4/3;
+            background: #000;
+            overflow: hidden;
+        }
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #canvas {
+            display: none;
+        }
+        .capture-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid rgba(255,255,255,0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        .capture-btn:active {
+            transform: scale(0.95);
+        }
+        .capture-btn-inner {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: white;
+            margin: auto;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-primary-500 text-white py-4 px-4 text-center">
+        <h1 class="text-xl font-bold">Hello <span class="text-primary-100">PdT</span></h1>
+        <p class="text-sm text-primary-200">Capture photo patient</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col">
+
+        <!-- Status: Connecting -->
+        <div id="status-connecting" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
+            <svg class="animate-spin w-12 h-12 text-primary-500 mb-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-white font-medium">Connexion en cours...</p>
+            <p class="text-slate-400 text-sm mt-2">Veuillez patienter</p>
+        </div>
+
+        <!-- Status: Error -->
+        <div id="status-error" class="hidden flex-1 flex flex-col items-center justify-center p-6 text-center">
+            <div class="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </div>
+            <p class="text-white font-medium">Erreur de connexion</p>
+            <p id="error-message" class="text-slate-400 text-sm mt-2">Impossible de se connecter</p>
+            <button onclick="location.reload()" class="mt-6 px-6 py-3 bg-primary-500 text-white rounded-lg font-medium">
+                Réessayer
+            </button>
+        </div>
+
+        <!-- Status: Camera -->
+        <div id="status-camera" class="hidden flex-1 flex flex-col">
+            <!-- Camera View -->
+            <div class="camera-container flex-1">
+                <video id="video" autoplay playsinline muted></video>
+            </div>
+
+            <!-- Controls -->
+            <div class="bg-slate-900 py-6 px-4 flex items-center justify-center gap-6">
+                <!-- Switch Camera -->
+                <button id="switchCameraBtn" class="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center text-white">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+
+                <!-- Capture Button -->
+                <button id="captureBtn" class="capture-btn flex items-center justify-center">
+                    <div class="capture-btn-inner"></div>
+                </button>
+
+                <!-- Placeholder for balance -->
+                <div class="w-12 h-12"></div>
+            </div>
+        </div>
+
+        <!-- Status: Preview -->
+        <div id="status-preview" class="hidden flex-1 flex flex-col">
+            <!-- Preview Image -->
+            <div class="camera-container flex-1 bg-black flex items-center justify-center">
+                <img id="preview-img" src="" alt="Preview" class="max-w-full max-h-full object-contain">
+            </div>
+
+            <!-- Controls -->
+            <div class="bg-slate-900 py-6 px-4 flex items-center justify-center gap-4">
+                <button id="retakeBtn" class="px-6 py-3 bg-slate-700 text-white rounded-lg font-medium flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Reprendre
+                </button>
+                <button id="sendBtn" class="px-6 py-3 bg-green-500 text-white rounded-lg font-medium flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Envoyer
+                </button>
+            </div>
+        </div>
+
+        <!-- Status: Sending -->
+        <div id="status-sending" class="hidden flex-1 flex flex-col items-center justify-center p-6 text-center">
+            <svg class="animate-spin w-12 h-12 text-green-500 mb-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-white font-medium">Envoi en cours...</p>
+        </div>
+
+        <!-- Status: Sent -->
+        <div id="status-sent" class="hidden flex-1 flex flex-col items-center justify-center p-6 text-center">
+            <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <p class="text-white font-medium text-lg">Photo envoyée !</p>
+            <p class="text-slate-400 text-sm mt-2">La photo a été ajoutée au dossier</p>
+            <button id="takeAnotherBtn" class="mt-6 px-6 py-3 bg-primary-500 text-white rounded-lg font-medium">
+                Prendre une autre photo
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Canvas for capture -->
+    <canvas id="canvas"></canvas>
+
+    <!-- PeerJS -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+    <script>
+        // DOM Elements
+        const statusConnecting = document.getElementById('status-connecting');
+        const statusError = document.getElementById('status-error');
+        const statusCamera = document.getElementById('status-camera');
+        const statusPreview = document.getElementById('status-preview');
+        const statusSending = document.getElementById('status-sending');
+        const statusSent = document.getElementById('status-sent');
+        const errorMessage = document.getElementById('error-message');
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const previewImg = document.getElementById('preview-img');
+
+        const captureBtn = document.getElementById('captureBtn');
+        const switchCameraBtn = document.getElementById('switchCameraBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const takeAnotherBtn = document.getElementById('takeAnotherBtn');
+
+        let peer = null;
+        let conn = null;
+        let stream = null;
+        let currentFacingMode = 'environment'; // Start with back camera
+        let capturedImageData = null;
+
+        // Show status
+        function showStatus(status) {
+            [statusConnecting, statusError, statusCamera, statusPreview, statusSending, statusSent].forEach(el => {
+                el.classList.add('hidden');
+            });
+            status.classList.remove('hidden');
+        }
+
+        // Get peer ID from URL
+        function getPeerId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('peer');
+        }
+
+        // Initialize camera
+        async function initCamera() {
+            try {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: currentFacingMode,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: false
+                });
+
+                video.srcObject = stream;
+                showStatus(statusCamera);
+
+            } catch (error) {
+                console.error('Camera error:', error);
+                showStatus(statusError);
+                errorMessage.textContent = 'Impossible d\'accéder à la caméra';
+            }
+        }
+
+        // Switch camera
+        async function switchCamera() {
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            await initCamera();
+        }
+
+        // Capture photo
+        function capturePhoto() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+
+            // Flip horizontally if front camera
+            if (currentFacingMode === 'user') {
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+
+            ctx.drawImage(video, 0, 0);
+            capturedImageData = canvas.toDataURL('image/jpeg', 0.85);
+            previewImg.src = capturedImageData;
+            showStatus(statusPreview);
+        }
+
+        // Send photo
+        function sendPhoto() {
+            if (!conn || !capturedImageData) return;
+
+            showStatus(statusSending);
+
+            try {
+                conn.send({
+                    type: 'photo',
+                    data: capturedImageData
+                });
+
+                showStatus(statusSent);
+            } catch (error) {
+                console.error('Send error:', error);
+                showStatus(statusError);
+                errorMessage.textContent = 'Erreur lors de l\'envoi';
+            }
+        }
+
+        // Take another photo
+        function takeAnotherPhoto() {
+            capturedImageData = null;
+            showStatus(statusCamera);
+        }
+
+        // Initialize PeerJS connection
+        async function init() {
+            const peerId = getPeerId();
+
+            if (!peerId) {
+                showStatus(statusError);
+                errorMessage.textContent = 'ID de connexion manquant';
+                return;
+            }
+
+            try {
+                peer = new Peer();
+
+                peer.on('open', (id) => {
+                    console.log('Mobile peer ID:', id);
+
+                    // Connect to desktop
+                    conn = peer.connect(peerId);
+
+                    conn.on('open', () => {
+                        console.log('Connected to desktop');
+                        initCamera();
+                    });
+
+                    conn.on('error', (err) => {
+                        console.error('Connection error:', err);
+                        showStatus(statusError);
+                        errorMessage.textContent = 'Erreur de connexion';
+                    });
+
+                    conn.on('close', () => {
+                        console.log('Connection closed');
+                        showStatus(statusError);
+                        errorMessage.textContent = 'Connexion fermée';
+                    });
+                });
+
+                peer.on('error', (err) => {
+                    console.error('Peer error:', err);
+                    showStatus(statusError);
+                    errorMessage.textContent = 'Erreur de connexion P2P';
+                });
+
+            } catch (error) {
+                console.error('Init error:', error);
+                showStatus(statusError);
+                errorMessage.textContent = 'Erreur d\'initialisation';
+            }
+        }
+
+        // Event listeners
+        captureBtn.addEventListener('click', capturePhoto);
+        switchCameraBtn.addEventListener('click', switchCamera);
+        retakeBtn.addEventListener('click', takeAnotherPhoto);
+        sendBtn.addEventListener('click', sendPhoto);
+        takeAnotherBtn.addEventListener('click', takeAnotherPhoto);
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
