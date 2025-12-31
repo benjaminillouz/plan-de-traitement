@@ -666,3 +666,63 @@ document.addEventListener('DOMContentLoaded', initApp);
 // Exposer certaines fonctions globalement pour le debug
 window.collectFormData = collectFormData;
 window.getVeasyParams = getVeasyParams;
+
+/**
+ * Sauvegarde le plan et retourne l'URL de visualisation (pour partage)
+ * @returns {Promise<{success: boolean, url: string, id: string}>}
+ */
+async function saveAndGetShareUrl() {
+    try {
+        // Collecter les données du formulaire
+        const formData = collectFormData();
+
+        // Générer l'ID du document
+        const timestamp = Date.now();
+        const documentId = `${formData.idPatient || 'share'}_${timestamp}`;
+
+        // Ajouter les photos
+        const photosList = window.getPhotos ? window.getPhotos() : [];
+        if (photosList.length > 0) {
+            formData.photos = photosList.map(p => ({
+                name: p.name,
+                date: p.date,
+                data: p.data
+            }));
+        }
+
+        // Ajouter les radiographies
+        const radiosList = window.getRadiographs ? window.getRadiographs() : [];
+        if (radiosList.length > 0) {
+            formData.radiographies = radiosList.map(r => ({
+                name: r.name,
+                date: r.date,
+                data: r.data
+            }));
+        }
+
+        // Sauvegarder dans Firestore
+        await saveTreatmentPlan(documentId, formData);
+
+        // Générer l'URL de visualisation
+        const baseUrl = window.location.origin;
+        const viewUrl = `${baseUrl}/view.html?id=${documentId}`;
+
+        console.log('✅ Plan sauvegardé pour partage:', viewUrl);
+
+        return {
+            success: true,
+            url: viewUrl,
+            id: documentId
+        };
+    } catch (error) {
+        console.error('❌ Erreur lors de la sauvegarde pour partage:', error);
+        return {
+            success: false,
+            url: '',
+            id: ''
+        };
+    }
+}
+
+// Exposer la fonction de partage globalement
+window.saveAndGetShareUrl = saveAndGetShareUrl;
