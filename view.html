@@ -11,6 +11,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="js/dental-chart.js"></script>
     <script>
         tailwind.config = {
@@ -128,6 +130,55 @@
         <div class="bg-white rounded-2xl p-6 shadow-xl text-center">
             <div class="w-12 h-12 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4"></div>
             <p class="text-slate-700 font-medium">Génération du PDF...</p>
+        </div>
+    </div>
+
+    <!-- P2P Share Modal -->
+    <div id="p2pShareModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-white">Partager via WhatsApp</h3>
+                <button onclick="closeP2pModal()" class="text-white/80 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6">
+                <!-- Waiting for connection -->
+                <div id="p2pWaiting" class="text-center">
+                    <p class="text-slate-600 mb-4">Scannez ce QR code avec votre téléphone pour recevoir le PDF</p>
+                    <div id="p2pQrContainer" class="flex justify-center mb-4">
+                        <div class="bg-white p-3 rounded-xl shadow-md border border-slate-200"></div>
+                    </div>
+                    <div class="flex items-center justify-center gap-2 text-sm text-slate-500">
+                        <div class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                        En attente de connexion...
+                    </div>
+                </div>
+
+                <!-- Connected - Sending -->
+                <div id="p2pSending" class="hidden text-center">
+                    <div class="w-16 h-16 border-4 border-green-200 border-t-green-500 rounded-full animate-spin mx-auto mb-4"></div>
+                    <p class="text-slate-700 font-medium">Envoi du PDF en cours...</p>
+                </div>
+
+                <!-- Sent successfully -->
+                <div id="p2pSent" class="hidden text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <p class="text-slate-700 font-medium mb-2">PDF envoyé !</p>
+                    <p class="text-slate-500 text-sm">Le PDF est maintenant sur votre téléphone. Vous pouvez le partager via WhatsApp.</p>
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-200">
+                <button onclick="closeP2pModal()" class="w-full px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-300 transition-colors">
+                    Fermer
+                </button>
+            </div>
         </div>
     </div>
 
@@ -621,36 +672,141 @@
             URL.revokeObjectURL(url);
         };
 
-        // Share PDF file
+        // P2P sharing state
+        let p2pPeer = null;
+        let p2pConnection = null;
+
+        // Share PDF file via P2P
         window.sharePdfFile = async function() {
             if (!currentPdfBlob) {
                 await generatePdf();
             }
 
-            const fileName = `Plan_Traitement_${currentPatientName.replace(/\s+/g, '_')}.pdf`;
-            const file = new File([currentPdfBlob], fileName, { type: 'application/pdf' });
+            // On mobile, use native share directly
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+                const fileName = `Plan_Traitement_${currentPatientName.replace(/\s+/g, '_')}.pdf`;
+                const file = new File([currentPdfBlob], fileName, { type: 'application/pdf' });
 
-            // Check if Web Share API with files is supported
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        files: [file],
-                        title: `Plan de Traitement - ${currentPatientName}`,
-                        text: `Plan de traitement dentaire de ${currentPatientName}`
-                    });
-                } catch (err) {
-                    if (err.name !== 'AbortError') {
-                        // Fallback to download
-                        downloadPdf();
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: `Plan de Traitement - ${currentPatientName}`,
+                            text: `Plan de traitement dentaire - ${currentPatientName}`
+                        });
+                        return;
+                    } catch (err) {
+                        if (err.name === 'AbortError') return;
                     }
                 }
-            } else {
-                // Fallback: download and show WhatsApp link
+                // Fallback for mobile
                 downloadPdf();
-                const shareUrl = window.location.href;
-                const message = `Plan de Traitement - ${currentPatientName}\n\nLe PDF a été téléchargé. Vous pouvez aussi consulter en ligne :\n${shareUrl}`;
-                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-                window.open(whatsappUrl, '_blank');
+                return;
+            }
+
+            // On desktop, use P2P QR code transfer
+            initP2pShare();
+        };
+
+        // Initialize P2P sharing
+        async function initP2pShare() {
+            // Close PDF modal first
+            closePdfModal();
+
+            // Show P2P modal
+            const modal = document.getElementById('p2pShareModal');
+            modal.classList.remove('hidden');
+
+            // Reset states
+            document.getElementById('p2pWaiting').classList.remove('hidden');
+            document.getElementById('p2pSending').classList.add('hidden');
+            document.getElementById('p2pSent').classList.add('hidden');
+
+            // Clean up previous peer
+            if (p2pPeer) {
+                p2pPeer.destroy();
+            }
+
+            try {
+                // Create new peer
+                p2pPeer = new Peer();
+
+                p2pPeer.on('open', (id) => {
+                    console.log('P2P Peer ID:', id);
+
+                    // Generate QR code with share URL
+                    const baseUrl = window.location.origin;
+                    const shareUrl = `${baseUrl}/share.html?peer=${id}`;
+
+                    const qrContainer = document.getElementById('p2pQrContainer');
+                    qrContainer.innerHTML = '<div class="bg-white p-3 rounded-xl shadow-md border border-slate-200"></div>';
+
+                    new QRCode(qrContainer.firstChild, {
+                        text: shareUrl,
+                        width: 180,
+                        height: 180,
+                        colorDark: '#25D366',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                });
+
+                p2pPeer.on('connection', async (conn) => {
+                    console.log('Mobile connected');
+                    p2pConnection = conn;
+
+                    conn.on('open', async () => {
+                        // Show sending state
+                        document.getElementById('p2pWaiting').classList.add('hidden');
+                        document.getElementById('p2pSending').classList.remove('hidden');
+
+                        // Convert PDF blob to base64
+                        const arrayBuffer = await currentPdfBlob.arrayBuffer();
+                        const base64Pdf = btoa(
+                            new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+                        );
+
+                        // Send PDF data
+                        const fileName = `Plan_Traitement_${currentPatientName.replace(/\s+/g, '_')}.pdf`;
+                        conn.send({
+                            type: 'pdf',
+                            data: base64Pdf,
+                            filename: fileName,
+                            patientName: currentPatientName
+                        });
+
+                        // Show success after a short delay
+                        setTimeout(() => {
+                            document.getElementById('p2pSending').classList.add('hidden');
+                            document.getElementById('p2pSent').classList.remove('hidden');
+                        }, 1000);
+                    });
+
+                    conn.on('error', (err) => {
+                        console.error('P2P connection error:', err);
+                    });
+                });
+
+                p2pPeer.on('error', (err) => {
+                    console.error('P2P peer error:', err);
+                });
+
+            } catch (err) {
+                console.error('P2P init error:', err);
+            }
+        }
+
+        // Close P2P modal
+        window.closeP2pModal = function() {
+            document.getElementById('p2pShareModal').classList.add('hidden');
+            if (p2pConnection) {
+                p2pConnection.close();
+                p2pConnection = null;
+            }
+            if (p2pPeer) {
+                p2pPeer.destroy();
+                p2pPeer = null;
             }
         };
 
@@ -659,9 +815,12 @@
             document.getElementById('pdfModal').classList.add('hidden');
         };
 
-        // Close modal on backdrop click
+        // Close modals on backdrop click
         document.getElementById('pdfModal').addEventListener('click', (e) => {
             if (e.target.id === 'pdfModal') closePdfModal();
+        });
+        document.getElementById('p2pShareModal').addEventListener('click', (e) => {
+            if (e.target.id === 'p2pShareModal') closeP2pModal();
         });
     </script>
 </body>
