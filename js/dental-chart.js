@@ -488,63 +488,124 @@ function createDentalChart(container) {
 
 /**
  * Generate a static dental chart HTML for PDF
+ * Supports multiple treatments per tooth
  * @param {Object} selections - Object with treatment types and their selected teeth
  * @returns {string} HTML string of the dental chart
  */
 function generateDentalChartForPDF(selections) {
-    const allSelectedTeeth = {};
+    // Store array of treatments per tooth (supports multiple)
+    const teethTreatments = {};
 
-    // Flatten all selections with their colors
+    const addTreatment = (toothNum, color, name) => {
+        const key = String(toothNum);
+        if (!teethTreatments[key]) {
+            teethTreatments[key] = [];
+        }
+        // Avoid duplicates
+        if (!teethTreatments[key].find(t => t.name === name)) {
+            teethTreatments[key].push({ ...color, name });
+        }
+    };
+
+    // Collect all treatments per tooth
     if (selections.avulsions?.length) {
-        selections.avulsions.forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.avulsion);
+        selections.avulsions.forEach(t => addTreatment(t, TREATMENT_COLORS.avulsion, 'avulsion'));
     }
     if (selections.restaurations?.length) {
-        selections.restaurations.forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.restauration);
+        selections.restaurations.forEach(t => addTreatment(t, TREATMENT_COLORS.restauration, 'restauration'));
     }
     if (selections.endo?.length) {
-        selections.endo.forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.endo);
+        selections.endo.forEach(t => addTreatment(t, TREATMENT_COLORS.endo, 'endo'));
     }
     if (selections.implants?.length) {
-        selections.implants.forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.implant);
+        selections.implants.forEach(t => addTreatment(t, TREATMENT_COLORS.implant, 'implant'));
     }
     if (selections.parodonto?.length) {
-        selections.parodonto.forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.parodonto);
+        selections.parodonto.forEach(t => addTreatment(t, TREATMENT_COLORS.parodonto, 'parodonto'));
     }
     if (selections.protheses_transitoires?.length) {
-        selections.protheses_transitoires.forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.transitoire);
+        selections.protheses_transitoires.forEach(t => addTreatment(t, TREATMENT_COLORS.transitoire, 'transitoire'));
     }
     if (selections.protheses_definitives) {
         const def = selections.protheses_definitives;
-        [...(def.inlay_core || []), ...(def.couronnes || []), ...(def.onlay || []), ...(def.amovibles || [])]
-            .forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.definitive);
+        (def.inlay_core || []).forEach(t => addTreatment(t, TREATMENT_COLORS.definitive, 'inlay_core'));
+        (def.couronnes || []).forEach(t => addTreatment(t, TREATMENT_COLORS.definitive, 'couronne'));
+        (def.onlay || []).forEach(t => addTreatment(t, TREATMENT_COLORS.definitive, 'onlay'));
+        (def.amovibles || []).forEach(t => addTreatment(t, TREATMENT_COLORS.definitive, 'amovible'));
     }
 
     // Check if any teeth are selected
-    if (Object.keys(allSelectedTeeth).length === 0) {
+    if (Object.keys(teethTreatments).length === 0) {
         return '';
     }
 
     const generateToothCell = (num, isUpper) => {
-        const selected = allSelectedTeeth[num] || allSelectedTeeth[String(num)];
-        const bgColor = selected ? selected.bg : '#5ba3b8';
-        const textColor = selected?.text || '#ffffff';
+        const treatments = teethTreatments[String(num)] || [];
+        const hasMultiple = treatments.length > 1;
+        const primary = treatments[0];
+
+        // Generate gradient for multiple treatments
+        let bgStyle = '#5ba3b8';
+        let borderColor = '#4a90a4';
+        let textColor = '#ffffff';
+
+        if (treatments.length === 1) {
+            bgStyle = primary.bg;
+            borderColor = primary.border;
+            textColor = primary.text || '#ffffff';
+        } else if (treatments.length === 2) {
+            // Two colors split horizontally
+            bgStyle = `linear-gradient(90deg, ${treatments[0].bg} 50%, ${treatments[1].bg} 50%)`;
+            borderColor = treatments[0].border;
+        } else if (treatments.length >= 3) {
+            // Three+ colors in segments
+            const segments = treatments.map((t, i) => {
+                const start = (i / treatments.length) * 100;
+                const end = ((i + 1) / treatments.length) * 100;
+                return `${t.bg} ${start}%, ${t.bg} ${end}%`;
+            }).join(', ');
+            bgStyle = `linear-gradient(90deg, ${segments})`;
+            borderColor = treatments[0].border;
+        }
+
+        // Generate colored dots for multiple treatments
+        const dotsHtml = hasMultiple ? `
+            <div style="display: flex; gap: 1px; justify-content: center; margin-${isUpper ? 'bottom' : 'top'}: 1px;">
+                ${treatments.map(t => `<span style="width: 6px; height: 6px; border-radius: 50%; background: ${t.bg}; border: 0.5px solid ${t.border};"></span>`).join('')}
+            </div>
+        ` : '';
+
+        // SVG fill color (use primary or gradient)
+        const toothFill = primary ? primary.light : '#f5f0e6';
+        const surfaceFill = primary ? primary.bg : '#fffef8';
+        const strokeColor = primary ? primary.border : '#d4c4a8';
 
         return `
             <div style="display: flex; flex-direction: column; align-items: center; margin: 0 1px;">
-                ${isUpper ? `<div style="width: 22px; height: 22px; border-radius: 50%; background: ${bgColor}; color: ${textColor}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-bottom: 2px; border: 1.5px solid ${selected ? selected.border : '#4a90a4'}; box-shadow: ${selected ? `0 2px 4px ${bgColor}60` : 'none'};">${num}</div>` : ''}
+                ${isUpper ? `
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <div style="width: 24px; height: 24px; border-radius: 50%; background: ${bgStyle}; color: ${textColor}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1.5px solid ${borderColor}; box-shadow: ${primary ? `0 2px 4px ${primary.bg}40` : 'none'};">${num}</div>
+                        ${dotsHtml}
+                    </div>
+                ` : ''}
                 <div style="width: 20px; height: 32px; display: flex; align-items: center; justify-content: center;">
                     <svg viewBox="0 0 20 35" style="width: 100%; height: 100%;">
                         <path d="${isUpper ? 'M3,4 Q3,1 10,1 Q17,1 17,4 L16,20 Q16,24 10,24 Q4,24 4,20 Z M7,22 L6,32 Q10,35 14,32 L13,22' : 'M7,2 L6,13 Q10,0 14,13 L13,2 M3,15 Q3,12 10,12 Q17,12 17,15 L16,31 Q16,34 10,34 Q4,34 4,31 Z'}"
-                              fill="${selected ? selected.light : '#f5f0e6'}"
-                              stroke="${selected ? selected.border : '#d4c4a8'}"
+                              fill="${toothFill}"
+                              stroke="${strokeColor}"
                               stroke-width="1"/>
                         <ellipse cx="10" cy="${isUpper ? 10 : 23}" rx="5" ry="4"
-                                 fill="${selected ? selected.bg : '#fffef8'}"
-                                 stroke="${selected ? selected.border : '#e8dcc8'}"
+                                 fill="${surfaceFill}"
+                                 stroke="${primary ? primary.border : '#e8dcc8'}"
                                  stroke-width="0.5"/>
                     </svg>
                 </div>
-                ${!isUpper ? `<div style="width: 22px; height: 22px; border-radius: 50%; background: ${bgColor}; color: ${textColor}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 2px; border: 1.5px solid ${selected ? selected.border : '#4a90a4'}; box-shadow: ${selected ? `0 2px 4px ${bgColor}60` : 'none'};">${num}</div>` : ''}
+                ${!isUpper ? `
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        ${dotsHtml}
+                        <div style="width: 24px; height: 24px; border-radius: 50%; background: ${bgStyle}; color: ${textColor}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1.5px solid ${borderColor}; box-shadow: ${primary ? `0 2px 4px ${primary.bg}40` : 'none'};">${num}</div>
+                    </div>
+                ` : ''}
             </div>
         `;
     };
