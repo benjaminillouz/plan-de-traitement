@@ -130,6 +130,9 @@
         </div>
     </div>
 
+    <!-- Hidden PDF render container (desktop format) -->
+    <div id="pdfRenderContainer" style="position: absolute; left: -9999px; top: 0; width: 800px; background: white;"></div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
@@ -160,6 +163,9 @@
         }
 
         function displayPlan(data) {
+            // Store raw data for PDF generation
+            currentPlanData = data;
+
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('planContent').classList.remove('hidden');
 
@@ -236,6 +242,7 @@
 
         // Store patient data globally for sharing
         let currentPatientName = 'Patient';
+        let currentPlanData = null;
         let currentPdfBlob = null;
         let currentPdfDataUrl = null;
 
@@ -267,51 +274,293 @@
             }
         };
 
+        // Generate PDF HTML for desktop format
+        function generatePdfHtml(data) {
+            const formatDate = (dateStr) => {
+                if (!dateStr) return '-';
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+            };
+
+            const patientName = `${data.patient?.prenom || ''} ${data.patient?.nom || ''}`.trim() || 'Patient';
+            const praticien = data.praticien?.nom || '-';
+            const centre = data.centre?.nom || '-';
+
+            let sectionsHtml = '';
+
+            // 1. Assainissement
+            if (data.detartrage || data.avulsions?.length > 0) {
+                sectionsHtml += `
+                    <div class="section">
+                        <h3>1. Assainissement</h3>
+                        <div class="section-content">
+                            ${data.detartrage ? '<p>✓ Détartrage</p>' : ''}
+                            ${data.avulsions?.length > 0 ? `<p>✓ Avulsions dentaires : <strong>${data.avulsions.join(', ')}</strong></p>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 2. Soins conservateurs
+            if (data.restaurations?.length > 0 || data.endo?.length > 0) {
+                sectionsHtml += `
+                    <div class="section">
+                        <h3>2. Soins conservateurs</h3>
+                        <div class="section-content">
+                            ${data.restaurations?.length > 0 ? `<p>✓ Restaurations : <strong>${data.restaurations.join(', ')}</strong></p>` : ''}
+                            ${data.endo?.length > 0 ? `<p>✓ Traitements endodontiques : <strong>${data.endo.join(', ')}</strong></p>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 3. Soins complémentaires
+            if (data.implants?.length > 0 || data.parodonto?.length > 0) {
+                sectionsHtml += `
+                    <div class="section">
+                        <h3>3. Soins complémentaires</h3>
+                        <div class="section-content">
+                            ${data.implants?.length > 0 ? `<p>✓ Pose d'implants : <strong>${data.implants.join(', ')}</strong></p>` : ''}
+                            ${data.parodonto?.length > 0 ? `<p>✓ Parodontologie : <strong>${data.parodonto.join(', ')}</strong></p>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 4. Prothèses transitoires
+            if (data.transitoires === 'oui' || data.protheses_transitoires?.length > 0) {
+                sectionsHtml += `
+                    <div class="section">
+                        <h3>4. Prothèses transitoires</h3>
+                        <div class="section-content">
+                            <p>✓ Oui${data.protheses_transitoires?.length > 0 ? ` : <strong>${data.protheses_transitoires.join(', ')}</strong>` : ''}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 5. Prothèses définitives
+            if (data.protheses_definitives) {
+                const pd = data.protheses_definitives;
+                const items = [];
+                if (pd.inlay_core) items.push(`Inlay Core${pd.inlay_core_dents?.length ? ' : ' + pd.inlay_core_dents.join(', ') : ''}`);
+                if (pd.couronne) items.push(`Couronnes${pd.couronne_dents?.length ? ' : ' + pd.couronne_dents.join(', ') : ''}`);
+                if (pd.onlay) items.push(`Inlay/Onlay${pd.onlay_dents?.length ? ' : ' + pd.onlay_dents.join(', ') : ''}`);
+                if (pd.prothese_amovible) items.push(`Prothèses amovibles${pd.prothese_amovible_dents?.length ? ' : ' + pd.prothese_amovible_dents.join(', ') : ''}`);
+
+                if (items.length > 0) {
+                    sectionsHtml += `
+                        <div class="section">
+                            <h3>5. Prothèses définitives</h3>
+                            <div class="section-content">
+                                ${items.map(item => `<p>✓ ${item}</p>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // 6. Radiographies
+            if (data.screenshot || data.radiographies?.length > 0) {
+                let radioHtml = '';
+                if (data.screenshot) {
+                    radioHtml += `<img src="${data.screenshot}" style="max-width: 100%; border-radius: 8px; margin-bottom: 10px;">`;
+                }
+                if (data.radiographies?.length > 0) {
+                    radioHtml += `<div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        ${data.radiographies.map(r => `<img src="${r.data}" style="max-width: 200px; border-radius: 8px;">`).join('')}
+                    </div>`;
+                }
+                sectionsHtml += `
+                    <div class="section">
+                        <h3>6. Radiographies</h3>
+                        <div class="section-content">${radioHtml}</div>
+                    </div>
+                `;
+            }
+
+            // 7. Photos
+            if (data.photos?.length > 0) {
+                sectionsHtml += `
+                    <div class="section">
+                        <h3>7. Photographies</h3>
+                        <div class="section-content">
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                                ${data.photos.map(p => `<img src="${p.data}" style="max-width: 200px; border-radius: 8px;">`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 8. Notes
+            if (data.notes?.trim()) {
+                sectionsHtml += `
+                    <div class="section">
+                        <h3>8. Notes</h3>
+                        <div class="section-content">
+                            <p style="white-space: pre-wrap; background: #f8fafc; padding: 15px; border-radius: 8px;">${data.notes.replace(/</g, '&lt;')}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <style>
+                    .pdf-content {
+                        font-family: 'Inter', Arial, sans-serif;
+                        padding: 40px;
+                        color: #1e293b;
+                        background: white;
+                    }
+                    .pdf-header {
+                        background: linear-gradient(135deg, #004B63, #003d51);
+                        color: white;
+                        padding: 30px;
+                        margin: -40px -40px 30px -40px;
+                    }
+                    .pdf-logo {
+                        font-size: 28px;
+                        font-weight: 700;
+                        margin-bottom: 5px;
+                    }
+                    .pdf-logo span { opacity: 0.8; }
+                    .pdf-subtitle { font-size: 14px; opacity: 0.9; }
+                    .pdf-date { font-size: 13px; opacity: 0.8; margin-top: 10px; }
+                    .patient-info {
+                        background: #f8fafc;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 12px;
+                        padding: 20px;
+                        margin-bottom: 25px;
+                    }
+                    .patient-info h4 {
+                        color: #004B63;
+                        font-size: 14px;
+                        font-weight: 600;
+                        margin: 0 0 15px 0;
+                        text-transform: uppercase;
+                    }
+                    .patient-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 12px;
+                    }
+                    .patient-field label {
+                        font-size: 11px;
+                        color: #64748b;
+                        display: block;
+                        margin-bottom: 2px;
+                    }
+                    .patient-field span {
+                        font-size: 14px;
+                        font-weight: 500;
+                        color: #1e293b;
+                    }
+                    .section {
+                        margin-bottom: 20px;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 12px;
+                        overflow: hidden;
+                    }
+                    .section h3 {
+                        background: linear-gradient(135deg, #004B63, #006080);
+                        color: white;
+                        padding: 12px 20px;
+                        margin: 0;
+                        font-size: 14px;
+                        font-weight: 600;
+                    }
+                    .section-content {
+                        padding: 15px 20px;
+                    }
+                    .section-content p {
+                        margin: 8px 0;
+                        font-size: 13px;
+                        line-height: 1.5;
+                    }
+                    .section-content strong {
+                        color: #004B63;
+                    }
+                </style>
+                <div class="pdf-content">
+                    <div class="pdf-header">
+                        <div class="pdf-logo">Hello <span>PdT</span></div>
+                        <div class="pdf-subtitle">Plan de Traitement Dentaire</div>
+                        <div class="pdf-date">Date : ${formatDate(data.date)}</div>
+                    </div>
+                    <div class="patient-info">
+                        <h4>Informations Patient</h4>
+                        <div class="patient-grid">
+                            <div class="patient-field">
+                                <label>Patient</label>
+                                <span>${patientName}</span>
+                            </div>
+                            <div class="patient-field">
+                                <label>Praticien</label>
+                                <span>${praticien}</span>
+                            </div>
+                            <div class="patient-field">
+                                <label>Centre de soins</label>
+                                <span>${centre}</span>
+                            </div>
+                            <div class="patient-field">
+                                <label>Date</label>
+                                <span>${formatDate(data.date)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${sectionsHtml || '<p style="text-align: center; color: #94a3b8;">Aucun traitement sélectionné</p>'}
+                </div>
+            `;
+        }
+
         // Generate PDF from content
         async function generatePdf() {
+            if (!currentPlanData) return;
+
             const { jsPDF } = window.jspdf;
-            const planContent = document.getElementById('planContent');
+            const pdfContainer = document.getElementById('pdfRenderContainer');
 
-            if (!planContent) return;
+            // Generate PDF HTML in desktop format
+            pdfContainer.innerHTML = generatePdfHtml(currentPlanData);
 
-            // Capture the content
-            const canvas = await html2canvas(planContent, {
+            // Wait for images to load
+            const images = pdfContainer.querySelectorAll('img');
+            await Promise.all([...images].map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(resolve => {
+                    img.onload = resolve;
+                    img.onerror = resolve;
+                });
+            }));
+
+            // Capture the content at fixed desktop width
+            const canvas = await html2canvas(pdfContainer, {
                 scale: 2,
                 useCORS: true,
                 logging: false,
-                backgroundColor: '#f8fafc'
+                backgroundColor: '#ffffff',
+                width: 800
             });
 
             const imgData = canvas.toDataURL('image/png');
             currentPdfDataUrl = imgData;
 
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgWidth = 190;
-            const pageHeight = 277;
+            const imgWidth = 210;
+            const pageHeight = 297;
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
             let heightLeft = imgHeight;
-            let position = 10;
+            let position = 0;
 
-            // Add header
-            pdf.setFillColor(0, 75, 99);
-            pdf.rect(0, 0, 210, 25, 'F');
-            pdf.setTextColor(255, 255, 255);
-            pdf.setFontSize(18);
-            pdf.setFont('helvetica', 'bold');
-            pdf.text('Hello PdT', 15, 16);
-            pdf.setFontSize(10);
-            pdf.setFont('helvetica', 'normal');
-            pdf.text('Plan de Traitement Dentaire', 60, 16);
-
-            position = 35;
-
-            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-            heightLeft -= (pageHeight - position);
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
 
             while (heightLeft > 0) {
                 pdf.addPage();
-                position = heightLeft - imgHeight + 10;
-                pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                position = heightLeft - imgHeight;
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
                 heightLeft -= pageHeight;
             }
 
