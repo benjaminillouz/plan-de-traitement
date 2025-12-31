@@ -486,6 +486,114 @@ function createDentalChart(container) {
     createVisualDentalChart(container);
 }
 
+/**
+ * Generate a static dental chart HTML for PDF
+ * @param {Object} selections - Object with treatment types and their selected teeth
+ * @returns {string} HTML string of the dental chart
+ */
+function generateDentalChartForPDF(selections) {
+    const allSelectedTeeth = {};
+
+    // Flatten all selections with their colors
+    if (selections.avulsions?.length) {
+        selections.avulsions.forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.avulsion);
+    }
+    if (selections.restaurations?.length) {
+        selections.restaurations.forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.restauration);
+    }
+    if (selections.endo?.length) {
+        selections.endo.forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.endo);
+    }
+    if (selections.implants?.length) {
+        selections.implants.forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.implant);
+    }
+    if (selections.parodonto?.length) {
+        selections.parodonto.forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.parodonto);
+    }
+    if (selections.protheses_transitoires?.length) {
+        selections.protheses_transitoires.forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.transitoire);
+    }
+    if (selections.protheses_definitives) {
+        const def = selections.protheses_definitives;
+        [...(def.inlay_core || []), ...(def.couronnes || []), ...(def.onlay || []), ...(def.amovibles || [])]
+            .forEach(t => allSelectedTeeth[t] = TREATMENT_COLORS.definitive);
+    }
+
+    // Check if any teeth are selected
+    if (Object.keys(allSelectedTeeth).length === 0) {
+        return '';
+    }
+
+    const generateToothCell = (num, isUpper) => {
+        const selected = allSelectedTeeth[num] || allSelectedTeeth[String(num)];
+        const bgColor = selected ? selected.bg : '#5ba3b8';
+        const textColor = selected?.text || '#ffffff';
+
+        return `
+            <div style="display: flex; flex-direction: column; align-items: center; margin: 0 1px;">
+                ${isUpper ? `<div style="width: 22px; height: 22px; border-radius: 50%; background: ${bgColor}; color: ${textColor}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-bottom: 2px; border: 1.5px solid ${selected ? selected.border : '#4a90a4'}; box-shadow: ${selected ? `0 2px 4px ${bgColor}60` : 'none'};">${num}</div>` : ''}
+                <div style="width: 20px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 20 35" style="width: 100%; height: 100%;">
+                        <path d="${isUpper ? 'M3,4 Q3,1 10,1 Q17,1 17,4 L16,20 Q16,24 10,24 Q4,24 4,20 Z M7,22 L6,32 Q10,35 14,32 L13,22' : 'M7,2 L6,13 Q10,0 14,13 L13,2 M3,15 Q3,12 10,12 Q17,12 17,15 L16,31 Q16,34 10,34 Q4,34 4,31 Z'}"
+                              fill="${selected ? selected.light : '#f5f0e6'}"
+                              stroke="${selected ? selected.border : '#d4c4a8'}"
+                              stroke-width="1"/>
+                        <ellipse cx="10" cy="${isUpper ? 10 : 23}" rx="5" ry="4"
+                                 fill="${selected ? selected.bg : '#fffef8'}"
+                                 stroke="${selected ? selected.border : '#e8dcc8'}"
+                                 stroke-width="0.5"/>
+                    </svg>
+                </div>
+                ${!isUpper ? `<div style="width: 22px; height: 22px; border-radius: 50%; background: ${bgColor}; color: ${textColor}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 2px; border: 1.5px solid ${selected ? selected.border : '#4a90a4'}; box-shadow: ${selected ? `0 2px 4px ${bgColor}60` : 'none'};">${num}</div>` : ''}
+            </div>
+        `;
+    };
+
+    const upperTeethHtml = UPPER_TEETH.map((num, i) => {
+        let html = generateToothCell(num, true);
+        if (i === 7) html += '<div style="width: 8px;"></div>';
+        return html;
+    }).join('');
+
+    const lowerTeethHtml = LOWER_TEETH.map((num, i) => {
+        let html = generateToothCell(num, false);
+        if (i === 7) html += '<div style="width: 8px;"></div>';
+        return html;
+    }).join('');
+
+    return `
+        <div style="background: linear-gradient(180deg, #e8f4f8 0%, #f0f7fa 100%); border-radius: 12px; padding: 15px; border: 1px solid #d1e3e8;">
+            <div style="display: flex; justify-content: center; align-items: flex-start; margin-bottom: 8px;">
+                ${upperTeethHtml}
+            </div>
+            <div style="height: 1px; background: linear-gradient(to right, transparent, #94d3e8 20%, #94d3e8 80%, transparent); margin: 8px 0;"></div>
+            <div style="display: flex; justify-content: center; align-items: flex-end;">
+                ${lowerTeethHtml}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Get a summary of all dental selections for PDF
+ */
+function getDentalSelectionsForPDF() {
+    return {
+        avulsions: getSelectedTeeth('avulsion-chart', 'selected-avulsion'),
+        restaurations: getSelectedTeeth('restauration-chart', 'selected-restauration'),
+        endo: getSelectedTeeth('endo-chart', 'selected-endo'),
+        implants: getSelectedTeeth('implant-chart', 'selected-implant'),
+        parodonto: getSelectedTeeth('parodonto-chart', 'selected-parodonto'),
+        protheses_transitoires: getSelectedTeeth('transitoire-chart', 'selected-transitoire'),
+        protheses_definitives: {
+            inlay_core: getSelectedTeeth('inlay-chart', 'selected-definitive'),
+            couronnes: getSelectedTeeth('couronne-chart', 'selected-definitive'),
+            onlay: getSelectedTeeth('onlay-chart', 'selected-definitive'),
+            amovibles: getSelectedTeeth('prothese-chart', 'selected-definitive')
+        }
+    };
+}
+
 // Expose globally
 window.toggleDentalChart = toggleDentalChart;
 window.toggleDentalChartRadio = toggleDentalChartRadio;
@@ -496,3 +604,5 @@ window.getDentalSelection = getDentalSelection;
 window.setSelectedTeeth = setSelectedTeeth;
 window.getAllDentalSelections = getAllDentalSelections;
 window.resetChartSelections = resetChartSelections;
+window.generateDentalChartForPDF = generateDentalChartForPDF;
+window.getDentalSelectionsForPDF = getDentalSelectionsForPDF;

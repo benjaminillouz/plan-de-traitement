@@ -132,7 +132,8 @@ function collectTreatmentData() {
         },
         notes: document.getElementById('notes')?.value || '',
         radiographies: window.getRadiographs ? window.getRadiographs() : [],
-        photos: window.getPhotos ? window.getPhotos() : []
+        photos: window.getPhotos ? window.getPhotos() : [],
+        dentalSelections: window.getDentalSelectionsForPDF ? window.getDentalSelectionsForPDF() : null
     };
     return data;
 }
@@ -395,6 +396,13 @@ function generatePdfHtml(patient, treatment) {
                 font-style: italic;
                 padding: 40px;
             }
+            .dental-chart-section {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 25px;
+            }
             .images-grid {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
@@ -444,6 +452,36 @@ function generatePdfHtml(patient, treatment) {
                     </div>
                 </div>
             </div>
+
+            ${treatment.dentalSelections && window.generateDentalChartForPDF ? `
+                <div class="dental-chart-section">
+                    <h4 style="color: #004B63; font-size: 14px; font-weight: 600; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px;">Schéma Dentaire</h4>
+                    ${window.generateDentalChartForPDF(treatment.dentalSelections)}
+                    <div class="legend" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; justify-content: center;">
+                        <span style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #64748b;">
+                            <span style="width: 12px; height: 12px; border-radius: 50%; background: #ef4444;"></span> Avulsion
+                        </span>
+                        <span style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #64748b;">
+                            <span style="width: 12px; height: 12px; border-radius: 50%; background: #22c55e;"></span> Restauration
+                        </span>
+                        <span style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #64748b;">
+                            <span style="width: 12px; height: 12px; border-radius: 50%; background: #15803d;"></span> Endo
+                        </span>
+                        <span style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #64748b;">
+                            <span style="width: 12px; height: 12px; border-radius: 50%; background: #3b82f6;"></span> Implant
+                        </span>
+                        <span style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #64748b;">
+                            <span style="width: 12px; height: 12px; border-radius: 50%; background: #8b5cf6;"></span> Parodonto
+                        </span>
+                        <span style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #64748b;">
+                            <span style="width: 12px; height: 12px; border-radius: 50%; background: #eab308;"></span> Transitoire
+                        </span>
+                        <span style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #64748b;">
+                            <span style="width: 12px; height: 12px; border-radius: 50%; background: #0f766e;"></span> Définitive
+                        </span>
+                    </div>
+                </div>
+            ` : ''}
 
             ${sectionsHtml}
 
