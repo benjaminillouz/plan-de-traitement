@@ -11,6 +11,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="js/dental-chart.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -405,6 +406,38 @@
                 `;
             }
 
+            // Generate dental chart if available
+            let dentalChartHtml = '';
+            if (window.generateDentalChartForPDF) {
+                // Build selections object from stored data
+                const selections = {
+                    avulsions: data.avulsions || [],
+                    restaurations: data.restaurations || [],
+                    endo: data.endo || [],
+                    implants: data.implants || [],
+                    parodonto: data.parodonto || [],
+                    protheses_transitoires: data.protheses_transitoires || [],
+                    protheses_definitives: {
+                        inlay_core: data.protheses_definitives?.inlay_core_dents || [],
+                        couronnes: data.protheses_definitives?.couronne_dents || [],
+                        onlay: data.protheses_definitives?.onlay_dents || [],
+                        amovibles: data.protheses_definitives?.prothese_amovible_dents || []
+                    }
+                };
+
+                const chartHtml = window.generateDentalChartForPDF(selections);
+                if (chartHtml) {
+                    dentalChartHtml = `
+                        <div class="section">
+                            <h3>Schéma Dentaire</h3>
+                            <div class="section-content" style="padding: 10px;">
+                                ${chartHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
             return `
                 <style>
                     .pdf-content {
@@ -510,6 +543,7 @@
                             </div>
                         </div>
                     </div>
+                    ${dentalChartHtml}
                     ${sectionsHtml || '<p style="text-align: center; color: #94a3b8;">Aucun traitement sélectionné</p>'}
                 </div>
             `;
