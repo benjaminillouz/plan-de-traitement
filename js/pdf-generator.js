@@ -577,83 +577,145 @@ async function printPdf() {
 }
 
 /**
- * Share via WhatsApp
+ * Share via WhatsApp - Show QR code modal for mobile access
  */
 async function shareViaWhatsApp() {
     const patient = getPatientInfo();
-    const message = `Plan de Traitement Dentaire\n\nPatient: ${patient.prenom} ${patient.nom}\nDate: ${patient.date}\nPraticien: ${patient.praticien}\n\nConsultez le plan de traitement complet.`;
 
-    // Check if Web Share API is available with file support
-    if (navigator.share && navigator.canShare) {
-        try {
-            const pdf = await generatePdfFile();
-            if (pdf) {
-                const blob = pdf.output('blob');
-                const file = new File([blob], `Plan_Traitement_${patient.nom}.pdf`, { type: 'application/pdf' });
+    // First download the PDF
+    await downloadPdf();
 
-                if (navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        title: 'Plan de Traitement',
-                        text: message,
-                        files: [file]
-                    });
-                    return;
-                }
-            }
-        } catch (err) {
-            console.log('Share error:', err);
-        }
-    }
-
-    // Fallback: open WhatsApp with text message
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-
-    if (typeof showToast === 'function') {
-        showToast('Téléchargez le PDF et joignez-le au message', 'info');
-    }
+    // Show QR code modal for WhatsApp sharing
+    showShareQrModal('whatsapp', patient);
 }
 
 /**
- * Share via Email
+ * Share via Email - Launch native mail client
  */
 async function shareViaEmail() {
     const patient = getPatientInfo();
     const subject = `Plan de Traitement - ${patient.prenom} ${patient.nom}`;
-    const body = `Bonjour,\n\nVeuillez trouver ci-joint le plan de traitement dentaire.\n\nPatient: ${patient.prenom} ${patient.nom}\nDate: ${patient.date}\nPraticien: ${patient.praticien}\n\nCordialement,\n${patient.praticien}`;
+    const body = `Bonjour,
 
-    // Check if Web Share API is available
-    if (navigator.share && navigator.canShare) {
-        try {
-            const pdf = await generatePdfFile();
-            if (pdf) {
-                const blob = pdf.output('blob');
-                const file = new File([blob], `Plan_Traitement_${patient.nom}.pdf`, { type: 'application/pdf' });
+Veuillez trouver ci-joint le plan de traitement dentaire.
 
-                if (navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        title: subject,
-                        text: body,
-                        files: [file]
-                    });
-                    return;
-                }
-            }
-        } catch (err) {
-            console.log('Share error:', err);
-        }
-    }
+Patient: ${patient.prenom} ${patient.nom}
+Date: ${patient.date}
+Praticien: ${patient.praticien}
 
-    // Fallback: open mailto link
+Cordialement,
+${patient.praticien}`;
+
+    // Download PDF first
+    await downloadPdf();
+
+    // Open native mail client with mailto
     const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailtoUrl;
 
-    // Also download the PDF
-    await downloadPdf();
-
     if (typeof showToast === 'function') {
-        showToast('PDF téléchargé - Joignez-le à votre email', 'info');
+        showToast('Client mail ouvert - Joignez le PDF téléchargé', 'info');
     }
+}
+
+/**
+ * Show QR code modal for sharing
+ */
+function showShareQrModal(shareType, patient) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('shareQrModal');
+    if (existingModal) existingModal.remove();
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.id = 'shareQrModal';
+    modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-[100] animate-fadeIn';
+    modal.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                        <h3 class="text-xl font-bold text-white">Partager via WhatsApp</h3>
+                    </div>
+                    <button id="closeShareQrModal" class="text-white/80 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="text-center mb-4">
+                    <p class="text-slate-600 mb-4">Scannez ce QR code avec votre téléphone pour accéder au document et le partager via WhatsApp</p>
+                </div>
+                <div class="flex justify-center mb-4">
+                    <div id="shareQrCodeContainer" class="bg-white p-4 rounded-xl shadow-md border border-slate-200"></div>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-green-800 font-medium mb-2">Instructions :</p>
+                    <ol class="text-sm text-green-700 space-y-1 list-decimal list-inside">
+                        <li>Scannez le QR code avec votre téléphone</li>
+                        <li>Le PDF a été téléchargé sur votre ordinateur</li>
+                        <li>Envoyez-le depuis votre téléphone ou transférez-le</li>
+                    </ol>
+                </div>
+                <div class="flex gap-3">
+                    <button id="openWhatsAppDirect" class="flex-1 px-4 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                        Ouvrir WhatsApp Web
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Generate QR code with current URL
+    const qrContainer = document.getElementById('shareQrCodeContainer');
+    const currentUrl = window.location.href.split('?')[0];
+    const message = `Plan de Traitement - ${patient.prenom} ${patient.nom}`;
+
+    if (qrContainer && window.QRCode) {
+        new window.QRCode(qrContainer, {
+            text: currentUrl,
+            width: 180,
+            height: 180,
+            colorDark: '#25D366',
+            colorLight: '#ffffff',
+            correctLevel: window.QRCode.CorrectLevel.M
+        });
+    }
+
+    // Close modal handler
+    document.getElementById('closeShareQrModal').addEventListener('click', () => {
+        modal.remove();
+    });
+
+    // Click outside to close
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+
+    // Open WhatsApp Web directly
+    document.getElementById('openWhatsAppDirect').addEventListener('click', () => {
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message + '\n\nDocument: ' + currentUrl)}`;
+        window.open(whatsappUrl, '_blank');
+    });
+
+    // ESC to close
+    const escHandler = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
 }
 
 // Initialize when DOM is loaded
